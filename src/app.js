@@ -23,5 +23,12 @@ app.use((err, req, res, next)=>{
   console.error('Error:', err);
   res.status(err.status||500).json({error: err.message || 'Server error'});
 });
-
+const mongoose = require('mongoose');
+app.get('/health', (req,res)=> {
+  res.json({
+    mongoState: mongoose.connection.readyState, // 1 = connected
+    uriPresent: !!process.env.MONGODB_URI,
+    origin: process.env.FRONTEND_ORIGIN
+  });
+});
 module.exports = app;
