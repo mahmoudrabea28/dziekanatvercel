@@ -1,2 +1,1 @@
-npm install
-npm run dev
+Akademion Backend v3.1

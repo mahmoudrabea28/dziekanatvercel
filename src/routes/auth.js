@@ -3,6 +3,7 @@ const User = require('../models/User');
 const PendingUser = require('../models/PendingUser');
 const { sendMail } = require('../utils/email');
 const { issueTokens } = require('../middleware/auth');
+const jwt = require('jsonwebtoken');
 
 function genCode(){ return ''+Math.floor(100000+Math.random()*900000); }
 
@@ -35,7 +36,6 @@ router.post('/verify-email', async (req,res,next)=>{
   }catch(e){ next(e); }
 });
 
-const jwt = require('jsonwebtoken');
 router.post('/login', async (req,res,next)=>{
   try{
     const { email, password, rememberMe } = req.body;
