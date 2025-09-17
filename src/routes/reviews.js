@@ -20,12 +20,10 @@ router.post('/:articleId', auth, hasRole('mentor'), async (req,res,next)=>{
       }
       await article.save();
     }
-    const msg = `Your article "${article.title}" received a review: grade ${grade}` +
-      (comment ? `, comment: "${String(comment).slice(0,80)}"` : '') +
-      `, status: ${article.status}`;
     await Notification.create({
       user: article.createdBy, article: article._id, type:'review',
-      message: msg, payload: { grade, comment, status: article.status }
+      message: `Your article "${article.title}" received a review: grade ${grade}${comment?`, comment: "${String(comment).slice(0,80)}"`:''}, status: ${article.status}`,
+      payload: { grade, comment, status: article.status }
     });
     res.status(201).json({ ok:true });
   }catch(e){ next(e); }

@@ -12,7 +12,7 @@ const PendingUserSchema = new Schema({
 }, { timestamps: true });
 
 PendingUserSchema.statics.createFromPayload = async function({email,password,firstName,lastName,role,code,ttlMinutes=15}){
-  const passwordHash = await require('bcryptjs').hash(password, 10);
+  const passwordHash = await bcrypt.hash(password, 10);
   const expiresAt = new Date(Date.now() + ttlMinutes*60*1000);
   return this.create({ email, passwordHash, firstName, lastName, role, code, expiresAt });
 };

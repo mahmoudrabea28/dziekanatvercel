@@ -1,5 +1,5 @@
 const { Schema, model, Types } = require('mongoose');
-const FileSchema = new Schema({ name:String, mime:String, size:Number, url:String }, {_id:false});
+const FileSchema = new Schema({ name:String, mime:String, size:Number, url:String, publicId:String }, {_id:false});
 const ArticleSchema = new Schema({
   title:{type:String, required:true},
   scientificField:{type:String, required:true},

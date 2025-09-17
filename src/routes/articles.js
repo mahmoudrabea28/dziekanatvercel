@@ -1,10 +1,11 @@
 const router = require('express').Router();
 const { auth, hasRole } = require('../middleware/auth');
-const { uploadPdf, deleteFileSafe } = require('../utils/storage');
+const { uploadPdf, deleteFileSafe, saveBufferToLocal } = require('../utils/storage');
 const Article = require('../models/Article');
 const Review = require('../models/Review');
 const User = require('../models/User');
 const AssignmentSeen = require('../models/AssignmentSeen');
+const { isCloudOn, uploadStream, deleteByPublicId } = require('../utils/cloud');
 
 function parseKeywords(s){ if(Array.isArray(s)) return s; if(!s) return []; return String(s).split(',').map(x=>x.trim()).filter(Boolean); }
 function buildFilter(q){
@@ -16,7 +17,6 @@ function buildFilter(q){
   if(q.q){ f.$or = [{title:new RegExp(q.q,'i')},{scientificField:new RegExp(q.q,'i')},{abstract:new RegExp(q.q,'i')},{keywords:{$in:[new RegExp(q.q,'i')]}}]; }
   return f;
 }
-
 async function mentorNameByEmail(email){
   if(!email) return null;
   const m = await User.findOne({ email: email.toLowerCase(), role:'mentor' }).lean();
@@ -29,7 +29,17 @@ router.post('/', auth, hasRole('author'), uploadPdf.array('files',10), async (re
     if(abstract.length > 500) return res.status(400).json({error:'Abstract must be 500 characters or fewer'});
     if(!mentorEmail) return res.status(400).json({error:'Mentor email is required'});
     if(!req.files || !req.files.length) return res.status(400).json({error:'A PDF file is required'});
-    const files = (req.files||[]).map(f=>({name:f.originalname, mime:f.mimetype, size:f.size, url:`/uploads/${f.filename}`}));
+
+    const files = [];
+    for(const f of (req.files||[])){
+      if(isCloudOn()){
+        const up = await uploadStream(f.buffer, f.originalname, (process.env.CLOUDINARY_FOLDER||'akademion')+'/articles','raw');
+        files.push({ name:f.originalname, mime:f.mimetype, size:f.size, url: up.secure_url, publicId: up.public_id });
+      }else{
+        const url = saveBufferToLocal(f.buffer, f.originalname);
+        files.push({ name:f.originalname, mime:f.mimetype, size:f.size, url });
+      }
+    }
     const author = req.user;
     const article = await Article.create({
       title, scientificField, keywords: parseKeywords(keywords), abstract,
@@ -45,13 +55,11 @@ router.get('/', async (req,res,next)=>{
   try{ const arts = await Article.find(buildFilter(req.query)).sort('-createdAt'); res.json(arts); }
   catch(e){ next(e); }
 });
-
 router.get('/mine', auth, hasRole('author'), async (req,res,next)=>{
   try{ const f = buildFilter(req.query); f.createdBy = req.user._id; const arts = await Article.find(f).sort('-createdAt'); res.json(arts); }
   catch(e){ next(e); }
 });
 
-// Assigned / Done
 router.get('/assigned', auth, hasRole('mentor'), async (req,res,next)=>{
   try{
     const f = buildFilter(req.query);
@@ -106,11 +114,20 @@ router.patch('/:id', auth, hasRole('author'), uploadPdf.array('files',10), async
     const { title, scientificField, keywords, abstract, mentorEmail } = req.body;
     if(title !== undefined) a.title = title;
     if(scientificField !== undefined) a.scientificField = scientificField;
-    if(keywords !== undefined) a.keywords = parseKeywords(keywords);
+    if(keywords !== undefined) a.keywords = (Array.isArray(keywords)?keywords:String(keywords).split(',').map(s=>s.trim()).filter(Boolean));
     if(abstract !== undefined){ if(String(abstract).length>500) return res.status(400).json({error:'Abstract must be 500 characters or fewer'}); a.abstract = abstract; }
     if(mentorEmail !== undefined){ a.mentorEmail = mentorEmail; a.mentorName = await mentorNameByEmail(mentorEmail||null); }
-    const files = (req.files||[]).map(f=>({name:f.originalname, mime:f.mimetype, size:f.size, url:`/uploads/${f.filename}`}));
-    if(files.length){ (a.files||[]).forEach(f=>deleteFileSafe(f.url)); a.files = files; }
+    const files = [];
+    for(const f of (req.files||[])){
+      if(isCloudOn()){
+        const up = await uploadStream(f.buffer, f.originalname, (process.env.CLOUDINARY_FOLDER||'akademion')+'/articles','raw');
+        files.push({ name:f.originalname, mime:f.mimetype, size:f.size, url: up.secure_url, publicId: up.public_id });
+      }else{
+        const url = saveBufferToLocal(f.buffer, f.originalname);
+        files.push({ name:f.originalname, mime:f.mimetype, size:f.size, url });
+      }
+    }
+    if(files.length){ (a.files||[]).forEach(f=>{ if(f.publicId) deleteByPublicId(f.publicId,'raw'); else deleteFileSafe(f.url); }); a.files = files; }
     a.version += 1; await a.save(); res.json(a);
   }catch(e){ next(e); }
 });
@@ -120,8 +137,8 @@ router.delete('/:id', auth, hasRole('author'), async (req,res,next)=>{
     const a = await Article.findById(req.params.id);
     if(!a) return res.status(404).json({error:'Not found'});
     if(a.createdBy.toString() !== req.user._id.toString()) return res.status(403).json({error:'Forbidden'});
-    (a.files||[]).forEach(f=>deleteFileSafe(f.url));
-    if(a.publishedPdfUrl) deleteFileSafe(a.publishedPdfUrl);
+    (a.files||[]).forEach(f=>{ if(f.publicId) deleteByPublicId(f.publicId,'raw'); else deleteFileSafe(f.url) });
+    if(a.publishedPdfUrl){ if(/res\.cloudinary\.com/.test(a.publishedPdfUrl)){ /* if we want full cleanup, store publicId; skipped */ } else deleteFileSafe(a.publishedPdfUrl); }
     await a.deleteOne(); res.json({message:'deleted'});
   }catch(e){ next(e); }
 });

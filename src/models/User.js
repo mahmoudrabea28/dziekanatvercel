@@ -9,6 +9,7 @@ const UserSchema = new Schema({
   phone: { type: String },
   role: { type: String, enum: ['author','mentor'], default: 'author' },
   avatarUrl: { type: String, default: null },
+  avatarPublicId: { type: String, default: null },
   emailVerifiedAt: { type: Date, default: null },
   refreshToken: { type: String }
 }, { timestamps: true });
