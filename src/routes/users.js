@@ -1,5 +1,6 @@
 const router = require('express').Router();
 const User = require('../models/User');
+const Article = require('../models/Article');
 const { auth } = require('../middleware/auth');
 const { uploadAvatar, deleteFileSafe } = require('../utils/storage');
 
@@ -14,16 +15,14 @@ router.patch('/me', auth, uploadAvatar.single('avatar'), async (req,res,next)=>{
     if(password) await req.user.setPassword(password);
     if(req.file){ if(req.user.avatarUrl) deleteFileSafe(req.user.avatarUrl); req.user.avatarUrl = `/uploads/${req.file.filename}`; }
     await req.user.save();
+    try{
+      const fullName = `${req.user.firstName} ${req.user.lastName}`.trim();
+      await Article.updateMany({ createdBy: req.user._id }, { $set: { authorName: fullName } });
+      if(req.user.role === 'mentor'){
+        await Article.updateMany({ mentorEmail: req.user.email }, { $set: { mentorName: fullName } });
+      }
+    }catch(_){}
     res.json(req.user);
-  }catch(e){ next(e); }
-});
-
-router.get('/', async (req,res,next)=>{
-  try{
-    const { role } = req.query;
-    const q = role ? { role } : {};
-    const users = await User.find(q).select('_id email firstName lastName role avatarUrl');
-    res.json(users);
   }catch(e){ next(e); }
 });
 

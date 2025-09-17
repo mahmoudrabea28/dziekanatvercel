@@ -25,7 +25,8 @@ async function mentorNameByEmail(email){
 
 router.post('/', auth, hasRole('author'), uploadPdf.array('files',10), async (req,res,next)=>{
   try{
-    const { title, scientificField, keywords, abstract, mentorEmail } = req.body;
+    const { title, scientificField, keywords, abstract = '', mentorEmail } = req.body;
+    if(abstract.length > 500) return res.status(400).json({error:'Abstract must be 500 characters or fewer'});
     if(!mentorEmail) return res.status(400).json({error:'Mentor email is required'});
     if(!req.files || !req.files.length) return res.status(400).json({error:'A PDF file is required'});
     const files = (req.files||[]).map(f=>({name:f.originalname, mime:f.mimetype, size:f.size, url:`/uploads/${f.filename}`}));
@@ -106,7 +107,7 @@ router.patch('/:id', auth, hasRole('author'), uploadPdf.array('files',10), async
     if(title !== undefined) a.title = title;
     if(scientificField !== undefined) a.scientificField = scientificField;
     if(keywords !== undefined) a.keywords = parseKeywords(keywords);
-    if(abstract !== undefined) a.abstract = abstract;
+    if(abstract !== undefined){ if(String(abstract).length>500) return res.status(400).json({error:'Abstract must be 500 characters or fewer'}); a.abstract = abstract; }
     if(mentorEmail !== undefined){ a.mentorEmail = mentorEmail; a.mentorName = await mentorNameByEmail(mentorEmail||null); }
     const files = (req.files||[]).map(f=>({name:f.originalname, mime:f.mimetype, size:f.size, url:`/uploads/${f.filename}`}));
     if(files.length){ (a.files||[]).forEach(f=>deleteFileSafe(f.url)); a.files = files; }

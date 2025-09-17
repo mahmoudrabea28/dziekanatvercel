@@ -11,7 +11,7 @@ app.use(express.urlencoded({extended:true}));
 app.use(cookieParser());
 app.use('/uploads', express.static(path.join(__dirname,'uploads')));
 
-app.get('/', (req,res)=>res.json({ok:true, name:'Akademion API v3.1'}));
+app.get('/', (req,res)=>res.json({ok:true, name:'Akademion API v3.3'}));
 app.use('/auth', require('./routes/auth'));
 app.use('/users', require('./routes/users'));
 app.use('/articles', require('./routes/articles'));

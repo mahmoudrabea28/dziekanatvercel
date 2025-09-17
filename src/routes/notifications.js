@@ -2,6 +2,7 @@ const router = require('express').Router();
 const { auth, hasRole } = require('../middleware/auth');
 const Notification = require('../models/Notification');
 
+// Only the article's author (current user) can see their own notifications
 router.get('/', auth, hasRole('author'), async (req,res,next)=>{
   try{ const items = await Notification.find({user:req.user._id}).sort('-createdAt'); res.json(items); }
   catch(e){ next(e); }
