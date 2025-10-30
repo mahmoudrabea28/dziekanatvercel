@@ -1,8 +1,7 @@
 const multer = require('multer');
 const path = require('path'); const fs = require('fs');
-const isVercel = !!process.env.VERCEL;
-const uploadRoot = process.env.UPLOAD_DIR || (isVercel ? path.join('/tmp','uploads') : path.join(__dirname, '..', 'uploads'));
-try { fs.mkdirSync(uploadRoot, {recursive:true}); } catch(_){ /* ignore */ }
+const uploadRoot = path.join(__dirname, '..', 'uploads');
+if(!fs.existsSync(uploadRoot)) fs.mkdirSync(uploadRoot, {recursive:true});
 
 const memory = multer.memoryStorage();
 
