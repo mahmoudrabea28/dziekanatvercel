@@ -6,7 +6,7 @@ const PendingUserSchema = new Schema({
   passwordHash: { type: String, required: true },
   firstName: { type: String, required: true },
   lastName: { type: String, required: true },
-  role: { type: String, enum: ['author','mentor'], default: 'author' },
+  role: { type: String, enum: ['professor','student'], default: 'professor' },
   code: { type: String, required: true },
   expiresAt: { type: Date, required: true }
 }, { timestamps: true });

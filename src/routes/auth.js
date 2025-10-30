@@ -11,7 +11,7 @@ router.post('/register', async (req,res,next)=>{
   try{
     const { email, password, firstName, lastName, role } = req.body;
     if(!email || !password || !firstName || !lastName) return res.status(400).json({error:'Missing fields'});
-    const allowed = ['author','mentor']; const r = allowed.includes(role) ? role : 'author';
+    const allowed = ['professor','student']; const r = allowed.includes(role) ? role : 'professor';
     const exists = await User.findOne({email}); if(exists) return res.status(409).json({error:'Email already registered'});
     const code = genCode(); await PendingUser.deleteOne({email}); await PendingUser.createFromPayload({email,password,firstName,lastName,role:r,code});
     await sendMail({ to:email, subject:'Akademion - Verify your email', text:`Your verification code is ${code}. It expires in 15 minutes.` });

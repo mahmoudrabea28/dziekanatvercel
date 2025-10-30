@@ -7,7 +7,7 @@ const UserSchema = new Schema({
   firstName: { type: String, required: true },
   lastName: { type: String, required: true },
   phone: { type: String },
-  role: { type: String, enum: ['author','mentor'], default: 'author' },
+  role: { type: String, enum: ['professor','student'], default: 'professor' },
   avatarUrl: { type: String, default: null },
   avatarPublicId: { type: String, default: null },
   emailVerifiedAt: { type: Date, default: null },

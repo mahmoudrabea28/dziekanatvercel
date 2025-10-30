@@ -4,7 +4,7 @@ const Review = require('../models/Review');
 const Article = require('../models/Article');
 const Notification = require('../models/Notification');
 
-router.post('/:articleId', auth, hasRole('mentor'), async (req,res,next)=>{
+router.post('/:articleId', auth, hasRole('student'), async (req,res,next)=>{
   try{
     const { grade, comment = '', status } = req.body;
     if(comment && String(comment).length > 100) return res.status(400).json({error:'Comment must be 100 characters or fewer'});

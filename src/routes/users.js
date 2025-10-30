@@ -32,7 +32,7 @@ router.patch('/me', auth, uploadAvatar.single('avatar'), async (req,res,next)=>{
     try{
       const fullName = `${req.user.firstName} ${req.user.lastName}`.trim();
       await Article.updateMany({ createdBy: req.user._id }, { $set: { authorName: fullName } });
-      if(req.user.role === 'mentor'){
+      if(req.user.role === 'student'){
         await Article.updateMany({ mentorEmail: req.user.email }, { $set: { mentorName: fullName } });
       }
     }catch(_){}
