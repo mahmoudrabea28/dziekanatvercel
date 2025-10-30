@@ -9,7 +9,9 @@ app.use(cors({ origin: FRONTEND_ORIGIN === '*' ? true : FRONTEND_ORIGIN, credent
 app.use(express.json({limit:'10mb'}));
 app.use(express.urlencoded({extended:true}));
 app.use(cookieParser());
-app.use('/uploads', express.static(path.join(__dirname,'uploads')));
+const uploadStatic = process.env.UPLOAD_DIR || (process.env.VERCEL ? '/tmp/uploads' : path.join(__dirname,'uploads'));
+app.use('/uploads', express.static(uploadStatic));
+app.get(['/favicon.ico','/favicon.png'], (req,res)=>res.status(204).end());
 
 app.get('/', (req,res)=>res.json({ok:true, name:'Akademion API v3.3'}));
 app.use('/auth', require('./routes/auth'));
